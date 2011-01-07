@@ -5,8 +5,11 @@ class ProxyEngine::UtilsController < ApplicationController
     # We want to grab params that are part of the requested URL, but ignore ones that are supplied by Rails
     ignored_params = ["proxy_url", "action", "controller"]
     url_params = params.reject{|param, val| ignored_params.include?(param) }.collect{ |param, val| param + '=' + CGI.escape(val) }.join('&')
-    
     url = params[:proxy_url]
+    if url.blank?
+      render :text => ''
+      return
+    end
     url += '&' + url_params unless url_params.blank?
     url = "http://www.thlib.org" + url if url[0,1] == "/"
     
