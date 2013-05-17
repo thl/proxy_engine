@@ -10,26 +10,25 @@ class ProxyEngine::UtilsController < ApplicationController
       return
     end
     url += '&' + url_params unless url_params.blank?
-    url = ThlSite.get_url + url if url[0,1] == "/"
+    url = InterfaceUtils::Server.get_url + url if url[0,1] == "/"
     # Any "&"s in the url sent to wiki_reader.php need to be replaced by "%26"
     if url =~ /wiki_reader\.php\?url=/
       url_split = url.split("wiki_reader.php?url=")
       url_split[1].gsub!("&", "%26")
       url = url_split.join("wiki_reader.php?url=")
     end
+    
     # Parse the URL with URI.parse() so we can work with its parts more easily
     uri = URI.parse(URI.encode(url));
-    requested_host = uri.host
     headers = {}
+    
     # Check to see if the request is for a URL on thlib.org or a subdomain; if so, and if
     # this is being run on sds[3-8], make the appropriate changes to headers and uri.host
-    if requested_host =~ /thlib.org/
-      server_host = Socket.gethostname.downcase
-      if server_host =~ /sds.+\.itc\.virginia\.edu/
-        headers = { 'Host' => requested_host }
-        uri.host = '127.0.0.1'
-      end
+    if [InterfaceUtils::Server::DEVELOPMENT, InterfaceUtils::Server::STAGING, InterfaceUtils::Server::PRODUCTION].include?(InterfaceUtils::Server.environment)
+      headers = { 'Host' => uri.host }
+      uri.host = '127.0.0.1'
     end
+    
     # Required for requests without paths (e.g. http://www.google.com)
     uri.path = "/" if uri.path.empty?
     path = uri.query.blank? ? uri.path : uri.path + '?' + uri.query
