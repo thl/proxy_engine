@@ -21,14 +21,6 @@ class ProxyEngine::UtilsController < ApplicationController
     
     # Parse the URL with URI.parse() so we can work with its parts more easily
     uri = URI.parse(URI.encode(url));
-    headers = {}
-    
-    # Check to see if the request is for a URL on thlib.org or a subdomain; if so, and if
-    # this is being run on sds[3-8], make the appropriate changes to headers and uri.host
-    if [InterfaceUtils::Server::DEVELOPMENT, InterfaceUtils::Server::STAGING, InterfaceUtils::Server::PRODUCTION].include?(InterfaceUtils::Server.environment)
-      headers = { Host: uri.host }
-      uri.host = '127.0.0.1'
-    end
     
     # Required for requests without paths (e.g. http://www.google.com)
     uri.path = '/' if uri.path.empty?
@@ -36,8 +28,7 @@ class ProxyEngine::UtilsController < ApplicationController
     begin
       http = Net::HTTP.new(uri.host, uri.port)
       http.read_timeout=360 # timeout in seconds. Yeah, that's 6 minutes.
-      request = Net::HTTP::Get.new(path, headers)
-      result = http.start {|web| web.request(request)}
+      result = http.get(path) # start {|web| web.request(request)}
       render plain: result.body
     rescue Timeout::Error
       render nothing: true
